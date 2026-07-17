@@ -1,0 +1,19 @@
+server:
+  port: 8080
+  shutdown: graceful # Enables Graceful Shutdown
+
+spring:
+  application:
+    name: java-microservices-scaffold
+  lifecycle:
+    timeout-per-shutdown-phase: 10s
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true # Enables Liveness and Readiness probes for K8s
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus # Exposes metrics for Observability

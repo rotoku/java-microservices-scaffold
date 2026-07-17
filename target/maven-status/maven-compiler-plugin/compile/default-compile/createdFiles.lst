@@ -1,0 +1,4 @@
+br\com\kumabe\api\Application.class
+br\com\kumabe\api\config\AppConfig.class
+br\com\kumabe\api\dto\HelloResponse.class
+br\com\kumabe\api\controller\HelloController.class
