@@ -50,7 +50,7 @@ jobs:
         with:
           name: "java-microservices-scaffold-build"
           path: |
-            ${{ github.workspace }}/./target/
+            ${{ github.workspace }}/target/
 
   Test:
     name: Test
@@ -97,5 +97,5 @@ jobs:
         with:
           name: "java-microservices-scaffold-test"
           path: |
-            ${{ github.workspace }}/./target/jacoco.exec
-            ${{ github.workspace }}/./target/site
+            ${{ github.workspace }}/target/jacoco.exec
+            ${{ github.workspace }}/target/site
