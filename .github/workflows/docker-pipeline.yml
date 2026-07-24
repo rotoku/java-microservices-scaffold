@@ -1,0 +1,78 @@
+name: "Docker Build, Scan & Push"
+
+on:
+  workflow_call:
+    inputs:
+      image_name:
+        description: "Nome da imagem no Docker Hub (ex: meu-usuario/minha-app)"
+        required: true
+        type: string
+      dockerfile_path:
+        description: "Caminho para o Dockerfile"
+        required: false
+        type: string
+        default: "./Dockerfile"
+      artifact_name:
+        description: "Nome do artefato para download (opcional)"
+        required: false
+        type: string
+        default: ""
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+
+jobs:
+  build-scan-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Download de artefato pré-compilado (Se existir)
+        if: ${{ inputs.artifact_name != '' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ./target-artifact
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.2
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}        
+
+      - name: Build da imagem local (Para o Trivy)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ inputs.dockerfile_path }}
+          load: true
+          tags: |
+            ${{ inputs.image_name }}:${{ steps.tag_version.outputs.new_tag }}
+            ${{ inputs.image_name }}:latest
+
+      - name: Scan de vulnerabilidades com Aqua Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ inputs.image_name }}:latest'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Push da imagem para o Docker Hub
+        run: |
+          docker push ${{ inputs.image_name }}:${{ steps.tag_version.outputs.new_tag }}
+          docker push ${{ inputs.image_name }}:latest

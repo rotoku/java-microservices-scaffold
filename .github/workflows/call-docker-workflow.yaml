@@ -1,0 +1,11 @@
+name: "Pipeline - Dockerfile Simples"
+on: [push]
+
+jobs:
+  call-docker-workflow:
+    uses: ./.github/workflows/docker-pipeline.yml
+    with:
+      image_name: "rotoku/java-microservices-scaffold"
+    secrets:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}

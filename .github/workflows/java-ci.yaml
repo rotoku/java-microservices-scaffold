@@ -1,0 +1,101 @@
+name: "Java CI"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  Build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: "Check Wrapper Exists"
+        run: |
+          count_maven=$(find . -type f -name mvnw 2>/dev/null | wc -l)
+          if [ "${count_maven}" -ge "1" ]; then
+            echo "setup_maven=false" >> $GITHUB_ENV
+          else
+            echo "setup_maven=true" >> $GITHUB_ENV
+          fi
+
+      - name: Set up Maven
+        if: ${{ env.setup_maven == true }}
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: 3.9.0
+
+      - name: Maven Clean and Package
+        run: |
+          if [[ ${{ env.setup_maven }} == true ]]; then
+            echo "Utilizando do instalador"
+            mvn -T 1C --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true  package -DskipTests -DskipITs -s settings.xml -f pom.xml;
+          else
+            echo "Utilizando Wrapper"
+            ./mvnw -T 1C --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true  package -DskipTests -DskipITs -s settings.xml -f pom.xml;
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "java-microservices-scaffold-build"
+          path: |
+            ${{ github.workspace }}/./target/
+
+  Test:
+    name: Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: 21
+
+      - name: "Check Wrapper Exists"
+        run: |
+          count_maven=$(find . -type f -name mvnw 2>/dev/null | wc -l)
+          if [ "${count_maven}" -ge "1" ]; then
+            echo "setup_maven=false" >> $GITHUB_ENV
+          else
+            echo "setup_maven=true" >> $GITHUB_ENV
+          fi
+
+      - name: Set up Maven
+        if: ${{ env.setup_maven == true }}
+        uses: stCarolas/setup-maven@v4.3
+        with:
+          maven-version: 3.9.0
+
+      - name: Maven Clean and Package
+        run: |
+          if [[ ${{ env.setup_maven }} == true ]]; then
+            echo "Utilizando do instalador"
+            mvn -T 1C --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true  test -s settings.xml -f pom.xml;
+            mvn -T 1C --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true  jacoco:report surefire-report:report-only -s settings.xml -f pom.xml;
+          else
+            echo "Utilizando Wrapper"
+            ./mvnw -T 1C --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true  test -s settings.xml -f pom.xml;
+            ./mvnw -T 1C --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true  jacoco:report surefire-report:report-only -s settings.xml -f pom.xml;
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: "java-microservices-scaffold-test"
+          path: |
+            ${{ github.workspace }}/./target/jacoco.exec
+            ${{ github.workspace }}/./target/site
