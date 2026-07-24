@@ -2,6 +2,7 @@
 FROM maven:3.9.11-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
+COPY sonar-project.properties .
 COPY src ./src
 # Build the jar skipping tests to speed up the container build during an interview
 RUN mvn clean package -DskipTests
