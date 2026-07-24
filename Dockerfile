@@ -1,5 +1,5 @@
 # Stage 1: Build the application
-FROM maven:3.9.6-eclipse-temurin-21-alpine AS builder
+FROM maven:3.9.11-eclipse-temurin-21-alpine AS builder
 WORKDIR /app
 COPY pom.xml .
 COPY src ./src
@@ -9,6 +9,9 @@ RUN mvn clean package -DskipTests
 # Stage 2: Minimal runtime environment
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+
+# Pull latest security patches from Alpine repositories.
+RUN apk --no-cache upgrade
 
 # Run as a non-root user for security (Security by Design)
 RUN addgroup -S spring && adduser -S spring -G spring
